@@ -1,0 +1,1 @@
+#Módulo para operações gerais em PDFs, como leitura, edição, desbloqueio, proteção, etc.

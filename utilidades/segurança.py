@@ -1,0 +1,1 @@
+# Módulo para funções relacionadas à segurança de arquivos, como adicionar e remover senhas de PDF.

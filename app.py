@@ -26,8 +26,22 @@ def convert_pdf_to_word(pdf_path, output_folder):
     # Define o caminho do arquivo de saída
     docx_path = os.path.join(output_folder, os.path.splitext(os.path.basename(pdf_path))[0] + '.docx')
     
+    # Caminho completo para o executável do LibreOffice (ajuste conforme necessário)
+    soffice_path = r'C:\Program Files\LibreOffice\program\soffice.exe'
+    
+    # Verificar se o caminho do LibreOffice está correto
+    if not os.path.isfile(soffice_path):
+        print(f"LibreOffice executable not found: {soffice_path}")
+        return None
+    
     # Executa o comando LibreOffice para converter o PDF para Word
-    result = subprocess.run(['soffice', '--headless', '--convert-to', 'docx', '--outdir', output_folder, pdf_path], capture_output=True, text=True)
+    command = [soffice_path, '--headless', '--convert-to', 'docx', '--outdir', output_folder, pdf_path]
+    print(f"Running command: {' '.join(command)}")
+    
+    result = subprocess.run(command, capture_output=True, text=True)
+    
+    print(f"Command output: {result.stdout}")
+    print(f"Command error: {result.stderr}")
     
     if result.returncode != 0:
         print(f"LibreOffice conversion error: {result.stderr}")
@@ -65,6 +79,14 @@ def upload_file():
         file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
         # Salva o arquivo no diretório de uploads
         file.save(file_path)
+        
+        # Verificação de permissões
+        if not os.access(file_path, os.R_OK):
+            print(f"No read access to file: {file_path}")
+            return "Read access denied", 500
+        if not os.access(app.config['UPLOAD_FOLDER'], os.W_OK):
+            print(f"No write access to directory: {app.config['UPLOAD_FOLDER']}")
+            return "Write access denied", 500
         
         # Converter PDF para Word
         docx_filename = convert_pdf_to_word(file_path, app.config['UPLOAD_FOLDER'])

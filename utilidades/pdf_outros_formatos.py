@@ -1,0 +1,1 @@
+#Módulo para funções que convertem de PDF para outros formatos como DOCX, PPTX, XLSX.

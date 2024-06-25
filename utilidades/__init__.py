@@ -1,0 +1,1 @@
+#Arquivo para inicialização do pacote utilidades.

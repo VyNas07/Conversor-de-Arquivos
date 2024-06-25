@@ -1,12 +1,15 @@
 <!doctype html>
-<html lang="pt-br">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Conversor de arquivos</title>
+    <title>Upload PDF</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
-
 </head>
 <body>
-    <h1>Bem vindo ao Conversor de arquivos</h1>
+    <h1>Upload a PDF to Convert to Word</h1>
+    <form action="/upload" method="post" enctype="multipart/form-data">
+        <input type="file" name="file">
+        <input type="submit" value="Upload">
+    </form>
 </body>
 </html>

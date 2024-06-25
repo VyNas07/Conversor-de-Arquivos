@@ -1,104 +1,85 @@
 import os
-import subprocess
-from flask import Flask, request, redirect, url_for, render_template
+from flask import Flask, request, redirect, url_for, render_template, send_file, flash
 from werkzeug.utils import secure_filename
-
-# Configurações de upload
-UPLOAD_FOLDER = 'uploads'
-if not os.path.exists(UPLOAD_FOLDER):
-    os.makedirs(UPLOAD_FOLDER)
+from utils.pdf_to_other_formats import convert_pdf_to_docx, convert_pdf_to_pptx, convert_pdf_to_xlsx
+from utils.other_formats_to_pdf import convert_docx_to_pdf, convert_pptx_to_pdf, convert_xlsx_to_pdf
+from utils.pdf_operations import read_pdf, unlock_pdf, protect_pdf
+from utils.file_operations import allowed_file
 
 app = Flask(__name__)
-app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
-app.config['ALLOWED_EXTENSIONS'] = {'pdf'}
+app.config['UPLOAD_FOLDER'] = 'uploads'
+app.config['ALLOWED_EXTENSIONS'] = {'pdf', 'docx', 'pptx', 'xlsx'}
 
-# Função para verificar se a extensão do arquivo é permitida
-def allowed_file(filename):
-    return '.' in filename and filename.rsplit('.', 1)[1].lower() in app.config['ALLOWED_EXTENSIONS']
+if not os.path.exists(app.config['UPLOAD_FOLDER']):
+    os.makedirs(app.config['UPLOAD_FOLDER'])
 
-# Função para converter PDF para Word usando LibreOffice
-def convert_pdf_to_word(pdf_path, output_folder):
-    # Verifica se o arquivo PDF existe
-    if not os.path.isfile(pdf_path):
-        print(f"File not found: {pdf_path}")
-        return None
-    
-    # Define o caminho do arquivo de saída
-    docx_path = os.path.join(output_folder, os.path.splitext(os.path.basename(pdf_path))[0] + '.docx')
-    
-    # Caminho completo para o executável do LibreOffice (ajuste conforme necessário)
-    soffice_path = r'C:\Program Files\LibreOffice\program\soffice.exe'
-    
-    # Verificar se o caminho do LibreOffice está correto
-    if not os.path.isfile(soffice_path):
-        print(f"LibreOffice executable not found: {soffice_path}")
-        return None
-    
-    # Executa o comando LibreOffice para converter o PDF para Word
-    command = [soffice_path, '--headless', '--convert-to', 'docx', '--outdir', output_folder, pdf_path]
-    print(f"Running command: {' '.join(command)}")
-    
-    result = subprocess.run(command, capture_output=True, text=True)
-    
-    print(f"Command output: {result.stdout}")
-    print(f"Command error: {result.stderr}")
-    
-    if result.returncode != 0:
-        print(f"LibreOffice conversion error: {result.stderr}")
-        return None
-    
-    if not os.path.isfile(docx_path):
-        print(f"Converted file not found: {docx_path}")
-        return None
-    
-    return os.path.basename(docx_path)
-
-# Rota para a página inicial
 @app.route('/')
 def index():
     return render_template('index.html')
 
-# Rota para lidar com o upload do arquivo
-@app.route('/upload', methods=['POST'])
-def upload_file():
-    # Verifica se o arquivo está presente no request
+@app.route('/upload_pdf_to_docx', methods=['POST'])
+def upload_pdf_to_docx():
     if 'file' not in request.files:
+        flash('No file part')
         return redirect(request.url)
-    
     file = request.files['file']
-    
-    # Verifica se o usuário selecionou um arquivo
     if file.filename == '':
+        flash('No selected file')
         return redirect(request.url)
-    
-    # Verifica se o arquivo tem uma extensão permitida
-    if file and allowed_file(file.filename):
-        # Protege o nome do arquivo contra ataques de path traversal
+    if file and allowed_file(file.filename, app.config['ALLOWED_EXTENSIONS']):
         filename = secure_filename(file.filename)
-        # Define o caminho completo para salvar o arquivo
         file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-        # Salva o arquivo no diretório de uploads
         file.save(file_path)
         
-        # Verificação de permissões
-        if not os.access(file_path, os.R_OK):
-            print(f"No read access to file: {file_path}")
-            return "Read access denied", 500
-        if not os.access(app.config['UPLOAD_FOLDER'], os.W_OK):
-            print(f"No write access to directory: {app.config['UPLOAD_FOLDER']}")
-            return "Write access denied", 500
+        # Chamar a função de conversão de PDF para DOCX do módulo pdf_to_other_formats
+        output_path = convert_pdf_to_docx(file_path, app.config['UPLOAD_FOLDER'])
         
-        # Converter PDF para Word
-        docx_filename = convert_pdf_to_word(file_path, app.config['UPLOAD_FOLDER'])
-        
-        if docx_filename:
-            # Renderiza a página de resultado com o resultado da conversão
-            return render_template('result.html', result=docx_filename)
-        else:
-            return "Conversion failed", 500
+        # Retornar o arquivo convertido para download ou exibição na página result.html
+        return send_file(output_path, as_attachment=True)
     
-    # Redireciona de volta para a página de upload se algo deu errado
+    flash('Invalid file type')
     return redirect(request.url)
 
+@app.route('/upload_pdf_to_pptx', methods=['POST'])
+def upload_pdf_to_pptx():
+    # Implemente similarmente para PDF para PPTX
+    pass
+
+@app.route('/upload_pdf_to_xlsx', methods=['POST'])
+def upload_pdf_to_xlsx():
+    # Implemente similarmente para PDF para XLSX
+    pass
+
+@app.route('/upload_docx_to_pdf', methods=['POST'])
+def upload_docx_to_pdf():
+    # Implemente similarmente para DOCX para PDF
+    pass
+
+@app.route('/upload_pptx_to_pdf', methods=['POST'])
+def upload_pptx_to_pdf():
+    # Implemente similarmente para PPTX para PDF
+    pass
+
+@app.route('/upload_xlsx_to_pdf', methods=['POST'])
+def upload_xlsx_to_pdf():
+    # Implemente similarmente para XLSX para PDF
+    pass
+
+@app.route('/read_pdf', methods=['POST'])
+def read_pdf_content():
+    # Implemente a rota para ler o conteúdo de um PDF
+    pass
+
+@app.route('/unlock_pdf', methods=['POST'])
+def unlock_pdf_file():
+    # Implemente a rota para desbloquear um PDF
+    pass
+
+@app.route('/protect_pdf', methods=['POST'])
+def protect_pdf_file():
+    # Implemente a rota para proteger um PDF com senha
+    pass
+
 if __name__ == '__main__':
+    app.secret_key = 'super_secret_key'
     app.run(debug=True)
